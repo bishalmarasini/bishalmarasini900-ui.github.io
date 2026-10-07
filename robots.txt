@@ -1,2 +1,3 @@
 User-agent: *
 Allow: /
+Sitemap: https://marasinibishal.com.np/sitemap.xml
