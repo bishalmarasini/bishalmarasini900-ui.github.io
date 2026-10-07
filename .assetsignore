@@ -1,0 +1,6 @@
+   .git
+   .wrangler
+   .gitignore
+   wrangler.jsonc
+   node_modules
+   CNAME
