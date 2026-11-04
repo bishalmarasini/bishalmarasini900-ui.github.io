@@ -1,32 +1,43 @@
-// theme toggle - persisted in localStorage so it survives navigating between pages
-try {
-  const html = document.documentElement;
-  const toggle = document.getElementById('themeToggle');
-
-  let saved = null;
-  try { saved = window.localStorage.getItem('bm-theme'); } catch (e) { /* storage may be unavailable */ }
-
-  let initial;
-  if (saved === 'light' || saved === 'dark') {
-    initial = saved;
-  } else {
-    initial = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
-  }
-  html.setAttribute('data-theme', initial);
-
-  if (toggle) {
-    toggle.addEventListener('click', () => {
-      const next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-      html.setAttribute('data-theme', next);
-      try { window.localStorage.setItem('bm-theme', next); } catch (e) { /* storage may be unavailable */ }
-    });
-  }
-} catch (e) { /* theme toggle is a non-critical enhancement */ }
+// Native modal dialog keeps keyboard focus inside the mobile navigation.
+(() => {
+  const trigger = document.getElementById('menuToggle');
+  const drawer = document.getElementById('mobileDrawer');
+  if (!trigger || !drawer) return;
+  let scrollPosition = 0;
+  let previousStyles;
+  const closeDrawer = () => { if (drawer.open) drawer.close(); };
+  trigger.addEventListener('click', () => {
+    scrollPosition = window.scrollY;
+    previousStyles = ['position', 'top', 'width'].map(key => document.body.style[key]);
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${scrollPosition}px`;
+    document.body.style.width = '100%';
+    drawer.showModal();
+    trigger.setAttribute('aria-expanded', 'true');
+  });
+  drawer.querySelector('.drawer-close').addEventListener('click', closeDrawer);
+  drawer.querySelectorAll('a').forEach(link => link.addEventListener('click', closeDrawer));
+  drawer.addEventListener('click', event => {
+    const rect = drawer.getBoundingClientRect();
+    if (event.target === drawer && (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom)) closeDrawer();
+  });
+  drawer.addEventListener('close', () => {
+    ['position', 'top', 'width'].forEach((key, index) => { document.body.style[key] = previousStyles[index]; });
+    const html = document.documentElement;
+    const previousBehavior = html.style.scrollBehavior;
+    html.style.scrollBehavior = 'auto';
+    window.scrollTo(0, scrollPosition);
+    html.style.scrollBehavior = previousBehavior;
+    trigger.setAttribute('aria-expanded', 'false');
+    trigger.focus({ preventScroll: true });
+  });
+  window.matchMedia('(min-width: 761px)').addEventListener('change', event => { if (event.matches) closeDrawer(); });
+})();
 
 // active nav link = current page, plus the sliding indicator that tracks it
 try {
   const currentPage = document.body.getAttribute('data-page');
-  document.querySelectorAll('#navLinks a, #mobileBar a').forEach(a => {
+  document.querySelectorAll('#navLinks a, #mobileDrawer a').forEach(a => {
     if (a.getAttribute('data-page') === currentPage) {
       a.classList.add('active');
     }
